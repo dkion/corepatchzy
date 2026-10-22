@@ -1,8 +1,8 @@
-name: Build Module
+name: Build CorePatch-Zygisk module
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [ main ]
     tags: [ 'v*' ]
   pull_request:
   workflow_dispatch:
@@ -10,12 +10,8 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          submodules: recursive   # 如果有子模块（如 zygisk.hpp 单独仓库）
+      - uses: actions/checkout@v4
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
@@ -26,37 +22,42 @@ jobs:
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Set up NDK and CMake
-        uses: nttld/setup-ndk@v1
-        id: ndk
-        with:
-          ndk-version: r26d
-          add-to-path: true
-
-      # 如果 CMake 3.22 是单独装的，确保 SDK 里已接受 license
-      - name: Accept licenses
-        run: yes | sdkmanager --licenses || true
-
-      - name: Setup Gradle cache
-        uses: gradle/actions/setup-gradle@v3
-
-      - name: Build
+      - name: Install SDK packages
         run: |
-          export ANDROID_NDK_HOME=${{ steps.ndk.outputs.ndk-path }}
-          ./gradlew :runtime:packageModule \
-            -Pandroid.useAndroidX=true \
-            --stacktrace --no-daemon
+          yes | sdkmanager --licenses >/dev/null 2>&1 || true
+          sdkmanager \
+            "platforms;android-34" \
+            "build-tools;34.0.0" \
+            "ndk;26.1.10909125" \
+            "cmake;3.22.1"
 
-      - name: Upload module zip
+      - name: Point Gradle at the SDK/NDK
+        run: |
+          echo "sdk.dir=$ANDROID_HOME" > local.properties
+          echo "ndk.dir=$ANDROID_HOME/ndk/26.1.10909125" >> local.properties
+
+      - name: Set up Gradle (with cache)
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Make wrapper executable
+        run: chmod +x gradlew
+
+      - name: Build flashable module zip
+        run: ./gradlew :runtime:packageModule --no-daemon --stacktrace
+
+      - name: Show build output
+        run: ls -la runtime/build/module_out/
+
+      - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
           name: CorePatch-Zygisk
-          path: runtime/build/module_out/*.zip
+          path: runtime/build/module_out/CorePatch-Zygisk.zip
 
-      # 打 tag 时自动发 Release
-      - name: Release
-        if: startsWith(github.ref, 'refs/tags/v')
+      # On a version tag (vX.Y.Z), publish the zip as a GitHub Release asset.
+      - name: Publish GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
-          files: runtime/build/module_out/*.zip
+          files: runtime/build/module_out/CorePatch-Zygisk.zip
           generate_release_notes: true
