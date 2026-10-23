@@ -1,0 +1,14 @@
+# Gradle / AGP
+.gradle/
+build/
+local.properties
+*.iml
+.idea/
+.kotlin/
+
+# Module build output
+runtime/build/
+
+# Misc
+.DS_Store
+*.log

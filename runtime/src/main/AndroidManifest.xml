@@ -1,0 +1,5 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Compile-time-only manifest; the module itself is headless (no app UI).
+         The dex is extracted and injected into system_server by the native
+         zygisk entry. -->
+</manifest>

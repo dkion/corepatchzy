@@ -1,0 +1,7 @@
+id=corepatch_zygisk
+name=CorePatch Zygisk
+version=v1.0.0
+versionCode=1
+author=CorePatch (adapted)
+description=Bypass Android APK signature verification, downgrade restrictions, shared-user and other install restrictions as a self-contained Zygisk module (no LSPosed required).
+zygisk=1
