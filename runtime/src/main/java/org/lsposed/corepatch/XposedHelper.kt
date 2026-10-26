@@ -102,7 +102,7 @@ object XposedHelper {
         } catch (_: IllegalAccessException) {
         }
 
-        val offset = UnsafeAccess.getInt(field, fieldOffsetValue).toLong()
+        val offset = fieldOffsetValue(field)
         UnsafeAccess.putBoolean(field.declaringClass, offset, value)
     }
 
@@ -144,6 +144,13 @@ object XposedHelper {
             objectFieldOffsetMethod.invoke(unsafeInstance, field) as Long
     }
 
+/**
+ * Reads the raw offset value stored inside a Field object (i.e. the value of
+ * ART's internal Field.offset slot), located via getFieldOffsetOffset().
+ */
+private fun fieldOffsetValue(field: Field): Long =
+    UnsafeAccess.getInt(field, getFieldOffsetOffset()).toLong()
+    
     @Suppress("DEPRECATION")
     @SuppressLint("SoonBlockedPrivateApi")
     private fun getFieldOffsetOffset(): Long {
