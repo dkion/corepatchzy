@@ -101,14 +101,14 @@ val packageModule = tasks.register("packageModule") {
         }
 
         // 3) native library for arm64
-        val so = candidateNativeLib(libAbi)
-            ?: throw GradleException("libcorepatchzygisk.so not found for $libAbi")
-        val libDir = File(stageDir, "lib/$libAbi")
-        mkdir(libDir)
+                val zygiskLib = File(stageDir, "zygisk/arm64-v8a.so")
+        zygiskLib.parentFile.mkdirs()
         copy {
             from(so)
-            into(libDir)
+            into(zygiskLib.parentFile)
+            rename { "arm64-v8a.so" }
         }
+
 
         // 4) zip it up
         ant.invokeMethod("mkdir", mapOf("dir" to outZip.get().asFile.parentFile))
