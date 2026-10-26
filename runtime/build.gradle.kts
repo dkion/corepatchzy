@@ -15,8 +15,13 @@ android {
         targetSdk = 34
         versionCode = 1
         versionName = "1.0.0"
-        // Pinned NDK so CI (and local builds) resolve it from the SDK deterministically.
         ndkVersion = "26.1.10909125"
+
+        externalNativeBuild {
+            cmake {
+                abiFilters += "arm64-v8a"   // <-- 新增
+            }
+        }
     }
 
     buildTypes {
@@ -41,6 +46,7 @@ android {
         jvmTarget = "17"
     }
 }
+
 
 // ---------------------------------------------------------------------------
 // Zygisk module packaging: produces build/module_out/CorePatch-Zygisk.zip
