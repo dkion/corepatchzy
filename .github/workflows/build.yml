@@ -24,16 +24,11 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v4
-        with:
-          packages: |
-            platform-tools
-            platforms;android-34
-            build-tools;34.0.0
-            ndk;26.1.10909125
-            cmdline-tools;latest
-            cmake;3.22.1
+      # Ubuntu runner 镜像已预装 Android SDK / NDK / CMake，无需 setup-android
+      - name: Check preinstalled SDK components
+        run: |
+          sdkmanager --list_installed
+          echo "ANDROID_HOME=$ANDROID_HOME"
 
       - name: Accept SDK licenses
         run: yes | sdkmanager --licenses >/dev/null 2>&1 || true
@@ -41,7 +36,14 @@ jobs:
       - name: Point Gradle at the SDK/NDK
         run: |
           echo "sdk.dir=$ANDROID_HOME" > local.properties
-          echo "ndk.dir=$ANDROID_HOME/ndk/26.1.10909125" >> local.properties
+          # 查找预装 NDK 的实际路径并写入 local.properties
+          NDK_DIR=$(ls -d "$ANDROID_HOME"/ndk/* 2>/dev/null | sort -V | tail -n 1)
+          if [ -z "$NDK_DIR" ]; then
+            sdkmanager "ndk;26.1.10909125"
+            NDK_DIR="$ANDROID_HOME/ndk/26.1.10909125"
+          fi
+          echo "ndk.dir=$NDK_DIR" >> local.properties
+          echo "Using NDK at $NDK_DIR"
 
       - name: Set up Gradle (with cache)
         uses: gradle/actions/setup-gradle@v4
@@ -61,7 +63,6 @@ jobs:
           name: CorePatch-Zygisk
           path: runtime/build/module_out/CorePatch-Zygisk.zip
 
-      # On a version tag (vX.Y.Z), publish the zip as a GitHub Release asset.
       - name: Publish GitHub Release
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
