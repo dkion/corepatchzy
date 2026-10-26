@@ -154,22 +154,19 @@ void setEntryPoint(void* art_method, void* entry) {
 // Shared ARM64 body. On entry x9 = handle (loaded by the thunk).
 __attribute__((naked)) void trampolineBody() {
     __asm__ __volatile__(
-        // frame: SavedArgs(72) + saved handle(8) = 80 -> round to 112 for
-        // alignment on the 16-byte AAPCS64 stack.
         "sub sp, sp, #112\n"
         "stp x0, x1, [sp, #0]\n"
         "stp x2, x3, [sp, #16]\n"
         "stp x4, x5, [sp, #32]\n"
         "stp x6, x7, [sp, #48]\n"
         "add x10, sp, #112\n"
-        "str x10, [sp, #64]\n"   // saved.sp = caller's sp
-        "str x9, [sp, #72]\n"    // saved handle
-        // trampolineImpl(env=x0, thiz=x1, handle=x2, &saved=x3, sp=x4)
+        "str x10, [sp, #64]\n"
+        "str x9, [sp, #72]\n"
         "ldr x2, [sp, #72]\n"
         "mov x3, sp\n"
         "add x4, sp, #112\n"
-        "adrp x9, trampolineImpl@GOTPAGE\n"
-        "ldr x9, [x9, trampolineImpl@GOTPAGEOFF]\n"
+        "adrp x9, :got:trampolineImpl\n"
+        "ldr x9, [x9, :got_lo12:trampolineImpl]\n"
         "blr x9\n"
         "add sp, sp, #112\n"
         "ret\n");
