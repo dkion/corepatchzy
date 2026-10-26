@@ -100,15 +100,19 @@ val packageModule = tasks.register("packageModule") {
             into(stageDir)
         }
 
-        // 3) native library for arm64
-                val zygiskLib = File(stageDir, "zygisk/arm64-v8a.so")
-        zygiskLib.parentFile.mkdirs()
+        // 3) native library for Zygisk: MUST be at zygisk/<abi>.so (a FILE,
+        //    not a directory) — Zygisk ignores the APK's lib/ JNI layout.
+        val zygiskStage = File(stageDir, "zygisk")
+        zygiskStage.mkdirs()
+
+        val nativeLibPath: String = candidateNativeLib(libAbi)?.absolutePath
+            ?: throw GradleException("libcorepatchzygisk.so not found for $libAbi")
+
         copy {
-            from(so)
-            into(zygiskLib.parentFile)
+            from(nativeLibPath)
+            into(zygiskStage)
             rename { "arm64-v8a.so" }
         }
-
 
         // 4) zip it up
         ant.invokeMethod("mkdir", mapOf("dir" to outZip.get().asFile.parentFile))
